@@ -1,18 +1,37 @@
-import React, { useState } from 'react';
-import Head from 'next/head';
+import React, { useState, useCallback } from 'react';
 import { Form, Input, Checkbox, Button } from 'antd';
-import AppLayout from '../components/AppLayout';
+
+// Custom Hook
+export const useInput = (initValue = null) => {
+  const [value, setter] = useState(initValue);
+  const handler = useCallback((e) => {
+    setter(e.target.value);
+  }, []);
+
+  return [value, handler];
+}
 
 const Signup = () => {
-  const [id, setId] = useState('');
-  const [nick, setNick] = useState('');
-  const [password, setPassword] = useState('');
   const [passwordCheck, setPasswordCheck] = useState('');
   const [term, setTerm] = useState(false);
+  const [passwordError, setPasswordError] = useState(false);
+  const [termError, setTermError] = useState(false);
+
+  // Custom Hook 으로 중복제거
+  const [id, setId] = useInput('');
+  const [nick, setNick] = useInput('');
+  const [password, setPassword] = useInput('');
 
   // ant v3 -> v4 되면서 onSubmit이 제거됨.
-  const onFinisn = () => {
-    console.log('onFinisn');
+  const onFinish = useCallback(() => {
+    if (password !== passwordCheck) {
+      return setPasswordError(true);
+    }
+
+    if(!term) {
+      return setTermError(true);
+    }
+   
     console.log({
       id,
       nick,
@@ -20,66 +39,50 @@ const Signup = () => {
       passwordCheck,
       term
     });
-  };
 
-  const onChangeId = (e) => {
-    console.log(e.target.value);
-    setId(e.target.value);
-  };
+  }, [password, passwordCheck, term]);
 
-  const onChangeNick = (e) => {
-    setNick(e.target.value);
-  };
-
-  const onChangePassword = (e) => {
-    setPassword(e.target.value);
-  };
-
-  const onChangePasswordCheck = (e) => {
+  const onChangePasswordCheck = useCallback((e) => {
+    setPasswordError(e.target.value !== password);
     setPasswordCheck(e.target.value);
-  };
+  }, [password]);
   
-  const onChangeTerm = (e) => {
+  const onChangeTerm = useCallback((e) => {
+    setTermError(false);
     setTerm(e.target.checked);
-  };
+  }, []);
 
   return (
-    <>
-      <Head>
-        <title>NodeBird</title>
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/antd/4.0.1/antd.min.css"></link>
-      </Head>
-      <AppLayout>
-        <Form onFinish={onFinisn} style={{ padding: 10 }}>
-          <div>
-            <label htmlFor="user-id">아이디</label>
-            <br/>
-            <Input name="user-id" value={id} required onChange={onChangeId} />
-          </div>
-          <div>
-            <label htmlFor="user-nick">닉네임</label>
-            <br/>
-            <Input name="user-nick" value={nick} required onChange={onChangeNick} />
-          </div>
-          <div>
-            <label htmlFor="user-password">비밀번호</label>
-            <br/>
-            <Input name="user-password" type="password" value={password} required onChange={onChangePassword} />
-          </div>
-          <div>
-            <label htmlFor="user-password-chk">비밀번호체크</label>
-            <br/>
-            <Input name="user-password-chk" type="password" value={passwordCheck} required onChange={onChangePasswordCheck} />
-          </div>
-          <div>
-            <Checkbox name="user-term" checked={term} onChange={onChangeTerm}>제 말을 들을 것을 동의합니다.</Checkbox>
-          </div>
-          <div>
-            <Button type="primary" htmlType="submit">가입하기</Button>
-          </div>
-        </Form>
-      </AppLayout>
-    </>
+    <Form onFinish={onFinish} style={{ padding: 10 }}>
+      <div>
+        <label htmlFor="user-id">아이디</label>
+        <br/>
+        <Input name="user-id" value={id} required onChange={setId} />
+      </div>
+      <div>
+        <label htmlFor="user-nick">닉네임</label>
+        <br/>
+        <Input name="user-nick" value={nick} required onChange={setNick} />
+      </div>
+      <div>
+        <label htmlFor="user-password">비밀번호</label>
+        <br/>
+        <Input name="user-password" type="password" value={password} required onChange={setPassword} />
+      </div>
+      <div>
+        <label htmlFor="user-password-chk">비밀번호체크</label>
+        <br/>
+        <Input name="user-password-chk" type="password" value={passwordCheck} required onChange={onChangePasswordCheck} />
+        {passwordError && <div style={{ color: 'red' }}>비밀번호가 일치하지 않습니다.</div>}
+      </div>
+      <div>
+        <Checkbox name="user-term" checked={term} onChange={onChangeTerm}>제 말을 들을 것을 동의합니다.</Checkbox>
+        {termError && <div style={{ color: 'red' }}>약관에 동의하셔야 합니다.</div>}
+      </div>
+      <div style={{ marginTop: 10 }}>
+        <Button type="primary" htmlType="submit">가입하기</Button>
+      </div>
+    </Form>
   );
 }
 
